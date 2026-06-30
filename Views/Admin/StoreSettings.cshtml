@@ -1,0 +1,285 @@
+@model ApiKey.Models.StoreSettingsModel
+@{
+    ViewBag.Title = "Cấu hình bán hàng";
+}
+
+<div class="card-glass">
+    <div id="actionAlert" class="alert-message" style="display:none; margin-bottom:1.5rem;"></div>
+
+    <form id="storeSettingsForm">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.25rem;">
+            <h3 style="font-size:1.2rem; font-weight:700; background:var(--accent-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin:0;">Danh Sách Sản Phẩm</h3>
+            <button type="button" class="btn-primary" id="btnAddProduct" style="padding:0.5rem 1rem; font-size:0.85rem;">
+                <i class="fa-solid fa-plus"></i> Thêm Sản Phẩm
+            </button>
+        </div>
+
+        <div id="productsContainer">
+            @foreach (var product in Model.Products.OrderBy(p => p.Id))
+            {
+                <div class="product-editor" style="border:1px solid var(--border-color); border-radius:8px; padding:1.25rem; margin-bottom:1.5rem; background:rgba(255,255,255,0.015);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
+                        <h4 class="product-editor-title" style="font-size:1rem; font-weight:700; margin:0; color:var(--text-primary);">@product.ProductName</h4>
+                        <button type="button" class="btn-action btn-disable btnDeleteProduct" title="Xóa sản phẩm">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+
+                    <div class="form-row-split">
+                        <div class="form-group">
+                            <label>Tên Sản Phẩm *</label>
+                            <input type="text" class="product-name-input" value="@product.ProductName" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Class Biểu Tượng (FontAwesome) *</label>
+                            <input type="text" class="product-icon-input" value="@product.LogoIcon" placeholder="fa-solid fa-key" required />
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:1.5rem;">
+                        <label>Mô Tả Sản Phẩm *</label>
+                        <textarea class="product-description-input" rows="3" required>@product.ProductDescription</textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:1.5rem;">
+                        <label>Đường Dẫn Tải Xuống Ứng Dụng</label>
+                        <input type="text" class="product-download-input" value="@product.DownloadUrl" placeholder="Ví dụ: https://example.com/download/app.zip" />
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h4 style="font-size:1rem; font-weight:700; margin:0; color:var(--text-secondary);">Gói Bán Hàng & Giá Tiền</h4>
+                        <button type="button" class="btn-primary btnAddPackage" style="padding:0.45rem 0.85rem; font-size:0.8rem;">
+                            <i class="fa-solid fa-plus"></i> Thêm Gói
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="custom-table packages-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:40%;">Thời Hạn (Số Ngày)</th>
+                                    <th style="width:45%;">Giá Bán (VND)</th>
+                                    <th style="width:15%; text-align:right;">Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var pkg in product.Packages.OrderBy(p => p.Days))
+                                {
+                                    <tr class="package-row">
+                                        <td data-label="Thời Hạn (Số Ngày)">
+                                            <input type="number" class="pkg-days" value="@pkg.Days" min="1" required style="width:100%; max-width:180px;" />
+                                        </td>
+                                        <td data-label="Giá Bán (VND)">
+                                            <input type="number" class="pkg-price" value="@pkg.Price" min="1000" required style="width:100%; max-width:220px;" />
+                                        </td>
+                                        <td data-label="Thao Tác">
+                                            <div class="actions-group" style="justify-content:flex-end;">
+                                                <button type="button" class="btn-action btn-disable btnDeleteRow" title="Xóa gói này">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:1rem;">
+            <button type="submit" class="btn-primary" id="btnSaveSettings">
+                <i class="fa-solid fa-floppy-disk"></i> <span>Lưu Cấu Hình</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section scripts {
+    <script>
+        $(document).ready(function() {
+            function showAlert(msg, className) {
+                var $alert = $('#actionAlert');
+                $alert.text(msg).removeClass('alert-danger alert-success').addClass(className).fadeIn();
+                setTimeout(function() { $alert.fadeOut(); }, 3000);
+            }
+
+            function packageRowHtml(days, price) {
+                return `
+                    <tr class="package-row">
+                        <td data-label="Thời Hạn (Số Ngày)">
+                            <input type="number" class="pkg-days" value="${days || 7}" min="1" required style="width:100%; max-width:180px;" />
+                        </td>
+                        <td data-label="Giá Bán (VND)">
+                            <input type="number" class="pkg-price" value="${price || 50000}" min="1000" required style="width:100%; max-width:220px;" />
+                        </td>
+                        <td data-label="Thao Tác">
+                            <div class="actions-group" style="justify-content:flex-end;">
+                                <button type="button" class="btn-action btn-disable btnDeleteRow" title="Xóa gói này">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+            }
+
+            function productEditorHtml() {
+                return `
+                    <div class="product-editor" style="border:1px solid var(--border-color); border-radius:8px; padding:1.25rem; margin-bottom:1.5rem; background:rgba(255,255,255,0.015);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem;">
+                            <h4 class="product-editor-title" style="font-size:1rem; font-weight:700; margin:0; color:var(--text-primary);">Sản phẩm mới</h4>
+                            <button type="button" class="btn-action btn-disable btnDeleteProduct" title="Xóa sản phẩm">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                        <div class="form-row-split">
+                            <div class="form-group">
+                                <label>Tên Sản Phẩm *</label>
+                                <input type="text" class="product-name-input" value="Sản phẩm mới" required />
+                            </div>
+                            <div class="form-group">
+                                <label>Class Biểu Tượng (FontAwesome) *</label>
+                                <input type="text" class="product-icon-input" value="fa-solid fa-key" placeholder="fa-solid fa-key" required />
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:1.5rem;">
+                            <label>Mô Tả Sản Phẩm *</label>
+                            <textarea class="product-description-input" rows="3" required>Mô tả sản phẩm mới</textarea>
+                        </div>
+                        <div class="form-group" style="margin-bottom:1.5rem;">
+                            <label>Đường Dẫn Tải Xuống Ứng Dụng</label>
+                            <input type="text" class="product-download-input" value="" placeholder="Ví dụ: https://example.com/download/app.zip" />
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h4 style="font-size:1rem; font-weight:700; margin:0; color:var(--text-secondary);">Gói Bán Hàng & Giá Tiền</h4>
+                            <button type="button" class="btn-primary btnAddPackage" style="padding:0.45rem 0.85rem; font-size:0.8rem;">
+                                <i class="fa-solid fa-plus"></i> Thêm Gói
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="custom-table packages-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40%;">Thời Hạn (Số Ngày)</th>
+                                        <th style="width:45%;">Giá Bán (VND)</th>
+                                        <th style="width:15%; text-align:right;">Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${packageRowHtml(7, 50000)}</tbody>
+                            </table>
+                        </div>
+                    </div>`;
+            }
+
+            $('#btnAddProduct').click(function() {
+                $('#productsContainer').append(productEditorHtml());
+            });
+
+            $(document).on('input', '.product-name-input', function() {
+                $(this).closest('.product-editor').find('.product-editor-title').text($(this).val() || 'Sản phẩm chưa đặt tên');
+            });
+
+            $(document).on('click', '.btnAddPackage', function() {
+                $(this).closest('.product-editor').find('.packages-table tbody').append(packageRowHtml(7, 50000));
+            });
+
+            $(document).on('click', '.btnDeleteRow', function() {
+                var $tbody = $(this).closest('tbody');
+                $(this).closest('tr').remove();
+                if ($tbody.find('.package-row').length === 0) {
+                    $tbody.append(packageRowHtml(7, 50000));
+                }
+            });
+
+            $(document).on('click', '.btnDeleteProduct', function() {
+                if ($('.product-editor').length <= 1) {
+                    showAlert('Cần giữ lại ít nhất một sản phẩm.', 'alert-danger');
+                    return;
+                }
+                $(this).closest('.product-editor').remove();
+            });
+
+            $('#storeSettingsForm').submit(function(e) {
+                e.preventDefault();
+
+                var products = [];
+                var validationError = false;
+
+                $('.product-editor').each(function() {
+                    var $product = $(this);
+                    var productName = $.trim($product.find('.product-name-input').val());
+                    var logoIcon = $.trim($product.find('.product-icon-input').val());
+                    var description = $.trim($product.find('.product-description-input').val());
+                    var downloadUrl = $.trim($product.find('.product-download-input').val());
+                    var packages = [];
+
+                    if (!productName || !logoIcon || !description) {
+                        showAlert('Tên, biểu tượng và mô tả của từng sản phẩm là bắt buộc.', 'alert-danger');
+                        validationError = true;
+                        return false;
+                    }
+
+                    $product.find('.package-row').each(function() {
+                        var daysVal = parseInt($(this).find('.pkg-days').val());
+                        var priceVal = parseInt($(this).find('.pkg-price').val());
+
+                        if (isNaN(daysVal) || daysVal <= 0) {
+                            showAlert('Thời hạn số ngày của các gói phải lớn hơn 0.', 'alert-danger');
+                            validationError = true;
+                            return false;
+                        }
+
+                        if (isNaN(priceVal) || priceVal < 1000) {
+                            showAlert('Giá bán tối thiểu của mỗi gói phải từ 1.000 đ.', 'alert-danger');
+                            validationError = true;
+                            return false;
+                        }
+
+                        packages.push({ Days: daysVal, Price: priceVal });
+                    });
+
+                    if (validationError) return false;
+
+                    products.push({
+                        ProductName: productName,
+                        LogoIcon: logoIcon,
+                        ProductDescription: description,
+                        DownloadUrl: downloadUrl,
+                        Packages: packages
+                    });
+                });
+
+                if (validationError) return;
+
+                if (products.length === 0) {
+                    showAlert('Vui lòng thêm ít nhất một sản phẩm.', 'alert-danger');
+                    return;
+                }
+
+                var $btn = $('#btnSaveSettings');
+                $btn.prop('disabled', true).find('span').text('Đang lưu...');
+
+                $.ajax({
+                    url: '@Url.Action("UpdateStoreSettings", "Admin")',
+                    type: 'POST',
+                    data: { productsJson: JSON.stringify(products) },
+                    success: function(res) {
+                        $btn.prop('disabled', false).find('span').text('Lưu Cấu Hình');
+                        if (res.success) {
+                            showAlert('Cấu hình bán hàng đã được cập nhật thành công!', 'alert-success');
+                            setTimeout(function() { window.location.reload(); }, 1000);
+                        } else {
+                            showAlert(res.message, 'alert-danger');
+                        }
+                    },
+                    error: function() {
+                        $btn.prop('disabled', false).find('span').text('Lưu Cấu Hình');
+                        showAlert('Lỗi kết nối máy chủ khi lưu cấu hình.', 'alert-danger');
+                    }
+                });
+            });
+        });
+    </script>
+}

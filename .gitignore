@@ -1,0 +1,54 @@
+# Visual Studio / MSBuild
+.vs/
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Build / publish output
+_ReSharper*/
+*.publishsettings
+*.pubxml.user
+App_Data/PublishProfiles/
+Properties/PublishProfiles/*.pubxml.user
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+project.lock.json
+project.assets.json
+
+# ASP.NET runtime data / secrets
+App_Data/*.json
+App_Data/*.log
+App_Data/*.sqlite
+App_Data/*.sqlite3
+App_Data/*.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.cache
+*.bak
+*.swp
+Thumbs.db
+Desktop.ini
+
+# Test / coverage output
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Roslyn compiler output copied during builds
+bin/roslyn/
+obj/**/roslyn/

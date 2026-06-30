@@ -1,0 +1,1162 @@
+@model ApiKey.Models.StoreSettingsModel
+@{
+    Layout = null;
+    var products = Model.Products != null && Model.Products.Count > 0
+        ? Model.Products.OrderBy(p => p.Id).ToList()
+        : new System.Collections.Generic.List<ApiKey.Models.StoreProduct>
+        {
+            new ApiKey.Models.StoreProduct
+            {
+                Id = 1,
+                ProductName = Model.ProductName,
+                ProductDescription = Model.ProductDescription,
+                LogoIcon = Model.LogoIcon,
+                DownloadUrl = Model.DownloadUrl,
+                Packages = Model.Packages
+            }
+    };
+    var firstProduct = products.First();
+    var productsJson = Newtonsoft.Json.JsonConvert.SerializeObject(
+        products,
+        new Newtonsoft.Json.JsonSerializerSettings
+        {
+            StringEscapeHandling = Newtonsoft.Json.StringEscapeHandling.EscapeHtml
+        });
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cửa Hàng API Key</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-primary: #07090e;
+            --bg-secondary: #0e121f;
+            --bg-tertiary: #1b2238;
+            --bg-glass: rgba(14, 18, 31, 0.7);
+            --border-glass: rgba(255, 255, 255, 0.05);
+            --border-hover: rgba(99, 102, 241, 0.35);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.15);
+            --danger: #f43f5e;
+            
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        /* Radial Background Glows Container */
+        .bg-glow-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Radial Background Glows */
+        .bg-glow-1 {
+            position: absolute;
+            top: 20%;
+            left: 10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(60px);
+        }
+
+        .bg-glow-2 {
+            position: absolute;
+            bottom: 10%;
+            right: 10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(60px);
+        }
+
+        /* Container */
+        .wrapper {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Header logo */
+        .brand-header {
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            font-size: 2rem;
+            font-weight: 800;
+            text-decoration: none;
+            text-align: center;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            max-width: 100%;
+        }
+
+        .brand-header i {
+            font-size: 2.25rem;
+            color: var(--accent);
+            -webkit-text-fill-color: initial;
+            flex: 0 0 auto;
+        }
+
+        .brand-header span {
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        /* Product Card Showcase */
+        .product-container {
+            perspective: 1000px;
+            width: 100%;
+            max-width: min(450px, calc(100vw - 1.5rem));
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 1.25rem;
+        }
+
+        .product-container > div {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .product-card {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+            min-height: 100%;
+            width: 100%;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--border-hover);
+            box-shadow: 0 30px 60px rgba(99, 102, 241, 0.15);
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--accent-gradient);
+            opacity: 0;
+            transition: var(--transition-smooth);
+        }
+
+        .product-card:hover::before {
+            opacity: 1;
+        }
+
+        .product-logo-wrapper {
+            width: 100px;
+            height: 100px;
+            border-radius: 24px;
+            background: rgba(99, 102, 241, 0.08);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin: 0 auto 2rem;
+            transition: var(--transition-smooth);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .product-card:hover .product-logo-wrapper {
+            background: var(--accent-gradient);
+            color: var(--text-primary);
+            transform: rotate(5deg) scale(1.05);
+        }
+
+        .product-name {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .product-tagline {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+
+        .product-action-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent);
+            transition: var(--transition-smooth);
+        }
+
+        .product-card:hover .product-action-text {
+            gap: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(4, 6, 10, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: var(--transition-smooth);
+            overflow-y: auto;
+            padding: 2rem 1rem;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+        }
+
+        .modal-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            max-width: 520px;
+            width: 90%;
+            padding: 2.5rem;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+            transform: scale(0.9);
+            transition: var(--transition-smooth);
+            position: relative;
+            margin: auto; /* Flex centering magic: centers vertically and horizontally, scrollable without top-clipping */
+        }
+
+        .modal-overlay.show .modal-box {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+            transform: rotate(90deg);
+        }
+
+        .modal-header {
+            margin-bottom: 2rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Forms inside Modal */
+        .form-group {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-glass);
+            color: var(--text-primary);
+            padding: 0.85rem 1rem;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+
+        .form-group input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Package selector cards */
+        .package-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .package-option {
+            border: 2px solid var(--border-glass);
+            background: var(--bg-primary);
+            border-radius: 14px;
+            padding: 1.25rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .package-option:hover {
+            border-color: var(--text-muted);
+        }
+
+        .package-option.selected {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+        }
+
+        .package-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+            color: var(--text-secondary);
+        }
+
+        .package-option.selected .package-title {
+            color: var(--text-primary);
+        }
+
+        .package-price {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .package-option.selected .package-price {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-pay {
+            background: var(--accent-gradient);
+            color: var(--text-primary);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn-pay:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-pay:active {
+            transform: translateY(0);
+        }
+
+        /* Payment Pending State */
+        .payment-pending {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 1.5rem;
+        }
+
+        .qr-mockup {
+            width: 160px;
+            height: 160px;
+            border-radius: 12px;
+            border: 4px solid var(--bg-primary);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .qr-mockup i {
+            font-size: 6rem;
+            color: var(--bg-primary);
+        }
+
+        .loader-ring {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @@keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .payment-url-btn {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-glass);
+            color: var(--text-primary);
+            padding: 0.85rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition-smooth);
+            margin-top: 0.5rem;
+        }
+
+        .payment-url-btn:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent);
+        }
+
+        /* Success State */
+        .payment-success {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 1.5rem;
+        }
+
+        .success-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: var(--success-glow);
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            animation: scaleUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @@keyframes scaleUp {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        .apikey-box {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            width: 100%;
+            padding: 0.85rem 1.2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: monospace;
+            font-size: 1.1rem;
+            word-break: break-all;
+            color: var(--success);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .btn-copy-key {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-copy-key:hover {
+            color: var(--text-primary);
+        }
+
+        /* Error/Alert box */
+        .alert-error {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            color: var(--danger);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            display: none;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border-glass);
+            background: #040609;
+        }
+
+        .download-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            color: var(--text-secondary);
+            padding: 1rem 2rem;
+            border-radius: 18px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 100%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(12px);
+            transition: var(--transition-smooth);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+            box-shadow: 0 15px 30px rgba(99, 102, 241, 0.1);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        .card-download-btn {
+            margin-top: 0;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            color: var(--text-secondary);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            width: 100%;
+            transition: var(--transition-smooth);
+            min-width: 0;
+            flex: 0 0 auto;
+        }
+
+        .card-download-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        @@media (min-width: 1100px) {
+            .product-container {
+                max-width: 1040px;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            }
+        }
+
+        /* Responsive Styles for Storefront */
+        @@media (max-width: 768px) {
+            html, body {
+                max-width: 100vw;
+            }
+
+            .wrapper {
+                padding: 1.5rem 1rem;
+                width: 100%;
+                max-width: 100vw;
+                justify-content: flex-start;
+                overflow-x: hidden;
+            }
+
+            .brand-header {
+                font-size: 1.5rem;
+                margin-bottom: 2rem;
+                justify-content: center;
+                text-align: center;
+                gap: 0.5rem;
+            }
+
+            .product-container {
+                grid-template-columns: minmax(0, 1fr);
+                width: 100%;
+                max-width: min(450px, calc(100vw - 2rem));
+                gap: 1rem;
+            }
+
+            .product-card:hover {
+                transform: none;
+            }
+
+            .brand-header i {
+                font-size: 1.75rem;
+            }
+
+            .product-card {
+                padding: 2.5rem 1.75rem;
+                border-radius: 20px;
+                max-width: 100%;
+                min-height: auto;
+            }
+
+            .product-logo-wrapper {
+                width: 80px;
+                height: 80px;
+                font-size: 2.5rem;
+                margin-bottom: 1.5rem;
+                border-radius: 20px;
+            }
+
+            .product-name {
+                font-size: 1.5rem;
+            }
+
+            .product-tagline {
+                font-size: 0.95rem;
+                margin-bottom: 1.5rem;
+                max-width: 100%;
+            }
+
+            .modal-box {
+                margin: auto;
+                width: 92%;
+                max-width: 480px;
+                padding: 1.5rem;
+                border-radius: 20px;
+            }
+
+            .modal-title {
+                font-size: 1.35rem;
+            }
+
+            .package-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+
+            .package-option {
+                padding: 1rem 0.75rem;
+            }
+
+            .package-price {
+                font-size: 1.1rem;
+            }
+        }
+
+        @@media (max-width: 480px) {
+            .wrapper {
+                padding: 1.25rem 0.75rem;
+            }
+
+            .brand-header {
+                font-size: 1.2rem;
+                line-height: 1.25;
+                width: 100%;
+            }
+
+            .brand-header i {
+                font-size: 1.35rem;
+            }
+
+            .product-container {
+                max-width: calc(100vw - 1.5rem);
+            }
+
+            .product-card {
+                padding: 1.75rem 1rem;
+            }
+
+            .product-name {
+                font-size: 1.2rem;
+            }
+
+            .product-tagline {
+                font-size: 0.85rem;
+            }
+
+            .modal-box {
+                padding: 1.25rem;
+                margin: 2rem auto;
+            }
+
+            .package-grid {
+                grid-template-columns: 1fr; /* Stack vertically on small phones */
+                gap: 0.5rem;
+            }
+
+            .package-option {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                text-align: left;
+                padding: 1rem 1.25rem;
+            }
+
+            .package-title {
+                margin-bottom: 0;
+            }
+
+            .apikey-box {
+                font-size: 0.95rem;
+                padding: 0.75rem 1rem;
+            }
+
+            .download-btn {
+                padding: 0.85rem 1.5rem;
+                border-radius: 14px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Radial glows -->
+    <div class="bg-glow-container">
+        <div class="bg-glow-1"></div>
+        <div class="bg-glow-2"></div>
+    </div>
+
+    <div class="wrapper">
+        <div class="brand-header">
+            <i class="fa-solid fa-store"></i>
+            <span>Cửa Hàng API Key</span>
+        </div>
+
+        <div class="product-container">
+            @foreach (var product in products)
+            {
+                <div>
+                    <div class="product-card openPurchaseModal"
+                         data-product-id="@product.Id"
+                         data-product-name="@product.ProductName"
+                         data-product-description="@product.ProductDescription"
+                         data-product-icon="@product.LogoIcon">
+                        <div class="product-logo-wrapper">
+                            <i class="@product.LogoIcon"></i>
+                        </div>
+                        <h2 class="product-name">@product.ProductName</h2>
+                        <p class="product-tagline">
+                            @product.ProductDescription
+                        </p>
+                        <div class="product-action-text">
+                            <span>Xem chi tiết & Mua License</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(product.DownloadUrl))
+                    {
+                        <a href="@product.DownloadUrl" target="_blank" class="card-download-btn">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Tải xuống ứng dụng</span>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Purchase Modal -->
+    <div class="modal-overlay" id="purchaseModal">
+        <div class="modal-box">
+            <button class="modal-close" id="closePurchaseModal">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- State 1: Choose package & Email -->
+            <div class="payment-init" id="paymentInitState">
+                <div class="modal-header">
+                    <h3 class="modal-title">Mua <span id="selectedProductName">@firstProduct.ProductName</span></h3>
+                    <p class="modal-subtitle">Nhập thông tin và chọn thời hạn sử dụng.</p>
+                </div>
+
+                <div class="alert-error" id="formError"></div>
+
+                <form id="purchaseForm">
+                    <div class="form-group">
+                        <label for="buyerEmail">Email của bạn</label>
+                        <input type="email" id="buyerEmail" required placeholder="nhan_key@gmail.com" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Chọn thời hạn Key</label>
+                        <div class="package-grid" id="packageGrid">
+                            @if (firstProduct.Packages != null && firstProduct.Packages.Count > 0)
+                            {
+                                int idx = 0;
+                                foreach (var pkg in firstProduct.Packages.OrderBy(p => p.Days))
+                                {
+                                    <div class="package-option @(idx == 0 ? "selected" : "")" data-days="@pkg.Days">
+                                        <div class="package-title">Gói @pkg.Days Ngày</div>
+                                        <div class="package-price">@pkg.Price.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) đ</div>
+                                    </div>
+                                    idx++;
+                                }
+                            }
+                            else
+                            {
+                                <div class="package-option selected" data-days="7">
+                                    <div class="package-title">Gói 7 Ngày</div>
+                                    <div class="package-price">50.000 đ</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-pay" id="btnSubmitPurchase">
+                        <i class="fa-solid fa-credit-card"></i>
+                        <span>Thanh toán với PayOS</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- State 2: Polling & QR code -->
+            <div class="payment-pending" id="paymentPendingState">
+                <div class="modal-header">
+                    <h3 class="modal-title">Đang thanh toán</h3>
+                    <p class="modal-subtitle">Sử dụng ứng dụng ngân hàng quét mã QR qua PayOS.</p>
+                </div>
+
+                <div class="qr-mockup">
+                    <i class="fa-solid fa-qrcode"></i>
+                </div>
+
+                <p style="font-size: 0.95rem; font-weight: 500;">
+                    Vui lòng bấm nút bên dưới để mở hóa đơn PayOS
+                </p>
+
+                <a href="#" target="_blank" class="payment-url-btn" id="payosLinkBtn">
+                    <span>Thanh toán hóa đơn PayOS</span>
+                    <i class="fa-solid fa-external-link"></i>
+                </a>
+
+                <div style="display: flex; align-items: center; gap: 0.75rem; justify-content: center; margin-top: 1rem; color: var(--text-secondary);">
+                    <span class="loader-ring"></span>
+                    <span style="font-size: 0.9rem; font-weight: 600;">Đang quét trạng thái giao dịch...</span>
+                </div>
+            </div>
+
+            <!-- State 3: Payment Success & Api Key Output -->
+            <div class="payment-success" id="paymentSuccessState">
+                <div class="success-icon">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                
+                <div class="modal-header" style="margin-bottom: 1rem;">
+                    <h3 class="modal-title" style="color: var(--success);">Thanh toán thành công!</h3>
+                    <p class="modal-subtitle">License key của bạn đã được khởi tạo thành công.</p>
+                </div>
+
+                <div class="apikey-box">
+                    <span id="generatedKeyDisplay">kg_live_loading...</span>
+                    <button class="btn-copy-key" id="btnCopyKey" title="Sao chép License Key">
+                        <i class="fa-regular fa-copy" id="copyIcon"></i>
+                    </button>
+                </div>
+
+                <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+                    Vui lòng lưu lại Key này. Bạn có thể sử dụng Key này trong header <code style="color: var(--accent); font-family: monospace;">x-api-key</code> khi gọi API.
+                </p>
+
+                <button class="btn-pay" id="btnFinish" style="margin-top: 1rem; background: var(--bg-tertiary); box-shadow: none;">
+                    <span>Hoàn tất</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">&copy; @DateTime.Now.Year Cửa Hàng API Key. All rights reserved.</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var products = @Html.Raw(productsJson);
+            var selectedProductId = products.length ? products[0].Id : 1;
+            var selectedDays = parseInt($('.package-option.selected').data('days')) || 7;
+            var pollingInterval = null;
+            var currentOrderCode = null;
+
+            function formatPrice(price) {
+                return (price || 0).toLocaleString('vi-VN') + ' đ';
+            }
+
+            function getProduct(productId) {
+                var id = parseInt(productId);
+                for (var i = 0; i < products.length; i++) {
+                    if (parseInt(products[i].Id) === id) {
+                        return products[i];
+                    }
+                }
+                return products[0];
+            }
+
+            function renderProductPackages(product) {
+                var packages = product && product.Packages ? product.Packages : [];
+                var html = '';
+
+                if (packages.length === 0) {
+                    packages = [{ Days: 7, Price: 50000 }];
+                }
+
+                packages.sort(function(a, b) {
+                    return parseInt(a.Days) - parseInt(b.Days);
+                });
+
+                for (var i = 0; i < packages.length; i++) {
+                    html += '<div class="package-option ' + (i === 0 ? 'selected' : '') + '" data-days="' + packages[i].Days + '">' +
+                        '<div class="package-title">Gói ' + packages[i].Days + ' Ngày</div>' +
+                        '<div class="package-price">' + formatPrice(packages[i].Price) + '</div>' +
+                    '</div>';
+                }
+
+                $('#packageGrid').html(html);
+                selectedDays = parseInt($('#packageGrid .package-option.selected').data('days')) || 7;
+            }
+
+            function openPurchaseModal(productId) {
+                var product = getProduct(productId);
+                if (!product) return;
+
+                selectedProductId = product.Id;
+                $('#selectedProductName').text(product.ProductName);
+                renderProductPackages(product);
+                $('#purchaseModal').addClass('show');
+            }
+
+            // Open Modal
+            $('.openPurchaseModal').click(function() {
+                openPurchaseModal($(this).data('product-id'));
+            });
+
+            // Close Modal
+            $('#closePurchaseModal, #btnFinish').click(function() {
+                $('#purchaseModal').removeClass('show');
+                // Reset states
+                setTimeout(function() {
+                    $('#paymentInitState').show();
+                    $('#paymentPendingState').hide();
+                    $('#paymentSuccessState').hide();
+                    $('#formError').hide();
+                    $('#buyerEmail').val('');
+                    renderProductPackages(getProduct(selectedProductId));
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                    }
+                }, 300);
+            });
+
+            // Select Package Option
+            $(document).on('click', '.package-option', function() {
+                $('.package-option').removeClass('selected');
+                $(this).addClass('selected');
+                selectedDays = parseInt($(this).data('days'));
+            });
+
+            // Submit Form - Create Payment
+            $('#purchaseForm').submit(function(e) {
+                e.preventDefault();
+                var email = $('#buyerEmail').val();
+                var $error = $('#formError');
+                var $btn = $('#btnSubmitPurchase');
+
+                if (!email) {
+                    $error.text('Vui lòng nhập email.').fadeIn();
+                    return;
+                }
+
+                $error.hide();
+                $btn.prop('disabled', true).find('span').text('Đang xử lý...');
+
+                $.ajax({
+                    url: '@Url.Action("CreatePayment", "Home")',
+                    type: 'POST',
+                    data: { email: email, days: selectedDays, productId: selectedProductId },
+                    success: function(response) {
+                        $btn.prop('disabled', false).find('span').text('Thanh toán với PayOS');
+                        if (response.success) {
+                            currentOrderCode = response.orderCode;
+                            
+                            // Setup redirect link and open PayOS in a new window/tab
+                            $('#payosLinkBtn').attr('href', response.checkoutUrl);
+                            
+                            // Open PayOS window
+                            window.open(response.checkoutUrl, '_blank');
+
+                            // Switch to polling state
+                            $('#paymentInitState').hide();
+                            $('#paymentPendingState').css('display', 'flex');
+
+                            // Start status polling
+                            startPolling(currentOrderCode);
+                        } else {
+                            $error.text(response.message).fadeIn();
+                        }
+                    },
+                    error: function() {
+                        $btn.prop('disabled', false).find('span').text('Thanh toán với PayOS');
+                        $error.text('Đã xảy ra lỗi khi kết nối với máy chủ.').fadeIn();
+                    }
+                });
+            });
+
+            // Polling Status check
+            function startPolling(orderCode) {
+                if (pollingInterval) clearInterval(pollingInterval);
+
+                pollingInterval = setInterval(function() {
+                    $.ajax({
+                        url: '@Url.Action("CheckPaymentStatus", "Home")',
+                        type: 'GET',
+                        data: { orderCode: orderCode },
+                        success: function(response) {
+                            if (response.success) {
+                                if (response.status === 'PAID') {
+                                    clearInterval(pollingInterval);
+                                    pollingInterval = null;
+                                    
+                                    // Display generated key
+                                    $('#generatedKeyDisplay').text(response.apiKey);
+
+                                    // Switch to Success State
+                                    $('#paymentPendingState').hide();
+                                    $('#paymentSuccessState').css('display', 'flex');
+                                } else if (response.status === 'CANCELLED') {
+                                    clearInterval(pollingInterval);
+                                    pollingInterval = null;
+                                    $('#paymentPendingState').hide();
+                                    $('#paymentInitState').show();
+                                    $('#formError').text('Giao dịch của bạn đã bị hủy trên cổng PayOS.').fadeIn();
+                                }
+                            }
+                        },
+                        error: function() {
+                            // Suppress errors during polling to keep experience clean
+                        }
+                    });
+                }, 3000);
+            }
+
+            // Copy to clipboard
+            $('#btnCopyKey').click(function() {
+                var keyText = $('#generatedKeyDisplay').text();
+                navigator.clipboard.writeText(keyText).then(function() {
+                    var $icon = $('#copyIcon');
+                    $icon.removeClass('fa-regular fa-copy').addClass('fa-solid fa-check').css('color', '#10b981');
+                    setTimeout(function() {
+                        $icon.removeClass('fa-solid fa-check').addClass('fa-regular fa-copy').css('color', '');
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

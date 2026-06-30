@@ -1,0 +1,76 @@
+﻿@{
+    ViewBag.Title = "Đăng nhập";
+}
+
+<div class="auth-container">
+    <div class="auth-bg-glow"></div>
+    <div class="card-glass auth-card">
+        <div class="auth-header">
+            <div class="brand" style="margin-bottom: 0.5rem;">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>KeyGuard</span>
+            </div>
+            <h2 class="auth-title">Đăng nhập Admin</h2>
+            <p class="auth-subtitle">Nhập thông tin quản trị viên của bạn</p>
+        </div>
+
+        <div id="loginAlert" class="alert-message alert-danger"></div>
+
+        <form id="loginForm" autocomplete="off">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required placeholder="admin@gmail.com" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••" />
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; height: 42px;">
+                <span>Đăng Nhập</span>
+                <i class="fa-solid fa-right-to-bracket"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            $('#loginForm').submit(function (e) {
+                e.preventDefault();
+                
+                var email = $('#email').val();
+                var password = $('#password').val();
+                var $alert = $('#loginAlert');
+
+                $alert.hide().removeClass('alert-danger alert-success');
+
+                if (!email || !password) {
+                    $alert.text('Vui lòng nhập đầy đủ email và mật khẩu.').addClass('alert-danger').fadeIn();
+                    return;
+                }
+
+                $.ajax({
+                    url: '@Url.Action("Login", "Auth")',
+                    type: 'POST',
+                    data: { email: email, password: password },
+                    success: function (response) {
+                        if (response.success) {
+                            $alert.text('Đăng nhập thành công! Đang chuyển hướng...').addClass('alert-success').fadeIn();
+                            setTimeout(function () {
+                                window.location.href = response.redirectUrl;
+                            }, 1000);
+                        } else {
+                            $alert.text(response.message).addClass('alert-danger').fadeIn();
+                        }
+                    },
+                    error: function () {
+                        $alert.text('Đã xảy ra lỗi khi gửi yêu cầu.').addClass('alert-danger').fadeIn();
+                    }
+                });
+            });
+        });
+    </script>
+}

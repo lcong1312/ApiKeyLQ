@@ -1,0 +1,108 @@
+@{
+    bool isAuthPage = ViewContext.RouteData.Values["controller"].ToString().Equals("Auth", StringComparison.OrdinalIgnoreCase);
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - KeyGuard Admin Portal</title>
+    <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/Scripts/jquery-3.3.1.min.js"></script>
+</head>
+<body>
+    @if (isAuthPage)
+    {
+        @RenderBody()
+    }
+    else
+    {
+        <div class="app-container">
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+            
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div class="brand">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>KeyGuard Admin</span>
+                    </div>
+                    <button class="btn-sidebar-close" id="sidebarClose" title="Đóng Menu">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <ul class="nav-menu">
+                    @{
+                        string action = ViewContext.RouteData.Values["action"].ToString();
+                    }
+                    <li class="nav-item @(action == "Dashboard" ? "active" : "")">
+                        <a href="@Url.Action("Dashboard", "Admin")">
+                            <i class="fa-solid fa-chart-line"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item @(action == "Keys" ? "active" : "")">
+                        <a href="@Url.Action("Keys", "Admin")">
+                            <i class="fa-solid fa-key"></i>
+                            <span>API Keys</span>
+                        </a>
+                    </li>
+                    <li class="nav-item @(action == "StoreSettings" ? "active" : "")">
+                        <a href="@Url.Action("StoreSettings", "Admin")">
+                            <i class="fa-solid fa-store"></i>
+                            <span>Cấu hình bán hàng</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="top-bar">
+                    <div style="display: flex; align-items: center;">
+                        <button class="btn-sidebar-toggle" id="sidebarToggle" title="Mở Menu">
+                            <i class="fa-solid fa-bars"></i>
+                        </button>
+                        <div class="page-title">
+                            @ViewBag.Title
+                        </div>
+                    </div>
+                    <div class="admin-profile">
+                        <span class="admin-email">
+                            <i class="fa-solid fa-user-shield"></i> @(ViewBag.AdminEmail ?? "admin@gmail.com")
+                        </span>
+                        <a href="@Url.Action("Logout", "Auth")" class="btn-logout">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                            <span>Đăng xuất</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="content-body">
+                    @RenderBody()
+                </div>
+            </div>
+        </div>
+    }
+    
+    <script>
+        $(document).ready(function () {
+            // Toggle sidebar on mobile
+            $('#sidebarToggle').click(function () {
+                $('.sidebar').addClass('open');
+                $('#sidebarOverlay').addClass('show');
+                $('body').css('overflow', 'hidden'); // prevent background scroll
+            });
+
+            // Close sidebar
+            $('#sidebarClose, #sidebarOverlay').click(function () {
+                $('.sidebar').removeClass('open');
+                $('#sidebarOverlay').removeClass('show');
+                $('body').css('overflow', '');
+            });
+        });
+    </script>
+    @RenderSection("scripts", required: false)
+</body>
+</html>

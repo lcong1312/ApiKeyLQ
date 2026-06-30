@@ -1,0 +1,171 @@
+﻿@model ApiKey.Models.DashboardViewModel
+@{
+    ViewBag.Title = "Dashboard Thống Kê";
+}
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <!-- Total Keys -->
+    <div class="card-glass stat-card stat-total">
+        <div class="stat-info">
+            <span class="stat-title">Tổng API Key</span>
+            <span class="stat-value">@Model.TotalKeys</span>
+        </div>
+        <div class="stat-icon">
+            <i class="fa-solid fa-key"></i>
+        </div>
+    </div>
+
+    <!-- Active Keys -->
+    <div class="card-glass stat-card stat-active">
+        <div class="stat-info">
+            <span class="stat-title">Đang Hoạt Động</span>
+            <span class="stat-value">@Model.ActiveKeys</span>
+        </div>
+        <div class="stat-icon">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+    </div>
+
+    <!-- Expired Keys -->
+    <div class="card-glass stat-card stat-expired">
+        <div class="stat-info">
+            <span class="stat-title">Hết Hạn</span>
+            <span class="stat-value">@Model.ExpiredKeys</span>
+        </div>
+        <div class="stat-icon">
+            <i class="fa-solid fa-hourglass-end"></i>
+        </div>
+    </div>
+
+    <!-- Disabled Keys -->
+    <div class="card-glass stat-card stat-disabled">
+        <div class="stat-info">
+            <span class="stat-title">Bị Khóa (Disabled)</span>
+            <span class="stat-value">@Model.DisabledKeys</span>
+        </div>
+        <div class="stat-icon">
+            <i class="fa-solid fa-ban"></i>
+        </div>
+    </div>
+</div>
+
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-bottom: 2rem;">
+    <!-- Total Requests -->
+    <div class="card-glass stat-card" style="color: #60a5fa;">
+        <div class="stat-info">
+            <span class="stat-title">Tổng Số Request</span>
+            <span class="stat-value" style="color: #f3f4f6;">@Model.TotalRequests</span>
+        </div>
+        <div class="stat-icon" style="background: rgba(96, 165, 250, 0.1); color: #60a5fa;">
+            <i class="fa-solid fa-chart-simple"></i>
+        </div>
+    </div>
+
+    <!-- Today's Requests -->
+    <div class="card-glass stat-card" style="color: #c084fc;">
+        <div class="stat-info">
+            <span class="stat-title">Yêu Cầu Hôm Nay</span>
+            <span class="stat-value" style="color: #f3f4f6;">@Model.TodayRequests</span>
+        </div>
+        <div class="stat-icon" style="background: rgba(192, 132, 252, 0.1); color: #c084fc;">
+            <i class="fa-solid fa-calendar-day"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Grid (Chart + Top List) -->
+<div class="dashboard-grid">
+    <!-- Chart -->
+    <div class="card-glass">
+        <h3 class="panel-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">Biểu đồ tần suất Request (7 ngày qua)</h3>
+        <div class="chart-container">
+            <canvas id="requestsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Top API Keys -->
+    <div class="card-glass">
+        <h3 class="panel-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;">Top API Key Sử Dụng Nhiều Nhất</h3>
+        <div class="top-keys-list">
+            @if (Model.TopKeys.Count == 0)
+            {
+                <div style="color: var(--text-secondary); text-align: center; padding: 2rem 0; font-size: 0.9rem;">
+                    Chưa có hoạt động nào được ghi lại.
+                </div>
+            }
+            else
+            {
+                foreach (var item in Model.TopKeys)
+                {
+                    <div class="top-key-item">
+                        <div class="top-key-details">
+                            <span class="top-key-name" title="@item.Name">@item.Name</span>
+                            <span class="top-key-owner">Chủ sở hữu: @item.Owner</span>
+                        </div>
+                        <span class="top-key-count">@item.RequestCount reqs</span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        $(document).ready(function () {
+            // Chart.js Theme Configurations
+            Chart.defaults.color = '#9ca3af';
+            Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+
+            // Retrieve data from MVC model
+            var labels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Last7DaysRequests.ConvertAll(r => r.DateString)));
+            var data = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Last7DaysRequests.ConvertAll(r => r.RequestCount)));
+
+            var ctx = document.getElementById('requestsChart').getContext('2d');
+            var chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số lượng Requests',
+                        data: data,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#8b5cf6',
+                        pointBorderColor: '#ffffff',
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

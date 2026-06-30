@@ -1,0 +1,573 @@
+@model List<ApiKey.Models.ApiKeyModel>
+@{
+    ViewBag.Title = "Quản lý API Keys";
+    int currentPage = ViewBag.Page;
+    int totalPages = ViewBag.TotalPages;
+    int totalRecords = ViewBag.TotalRecords;
+    int pageSize = ViewBag.PageSize;
+    int startRecord = totalRecords == 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    int endRecord = Math.Min(currentPage * pageSize, totalRecords);
+}
+
+<div class="card-glass">
+    <!-- Top Action & Filter Controls -->
+    <div class="table-controls">
+        <form method="get" action="@Url.Action("Keys", "Admin")" style="display: flex; flex-wrap: wrap; gap: 1rem; width: 100%; justify-content: space-between;">
+            <input type="hidden" name="sort" value="@ViewBag.Sort" />
+            <input type="hidden" name="direction" value="@ViewBag.Direction" />
+            <input type="hidden" name="page" value="1" />
+
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" name="search" value="@ViewBag.Search" placeholder="Tìm kiếm tên, owner, API key..." />
+            </div>
+
+            <div class="filter-group">
+                <select name="status" onchange="this.form.submit()">
+                    <option value="All" @(ViewBag.Status == "All" ? "selected" : "")>Tất cả trạng thái</option>
+                    <option value="Active" @(ViewBag.Status == "Active" ? "selected" : "")>Hoạt động</option>
+                    <option value="Disabled" @(ViewBag.Status == "Disabled" ? "selected" : "")>Bị khóa (Disabled)</option>
+                    <option value="Expired" @(ViewBag.Status == "Expired" ? "selected" : "")>Hết hạn</option>
+                </select>
+
+                <select name="expired" onchange="this.form.submit()">
+                    <option value="All" @(ViewBag.Expired == "All" ? "selected" : "")>Tất cả thời hạn</option>
+                    <option value="No" @(ViewBag.Expired == "No" ? "selected" : "")>Còn hạn</option>
+                    <option value="Yes" @(ViewBag.Expired == "Yes" ? "selected" : "")>Đã quá hạn</option>
+                </select>
+
+                <button type="submit" class="btn-secondary" style="padding: 0.6rem 1rem;">
+                    <i class="fa-solid fa-filter"></i> Lọc
+                </button>
+            </div>
+
+            <div>
+                <button type="button" class="btn-primary" onclick="openModal('createModal')">
+                    <i class="fa-solid fa-plus"></i> Tạo API Key
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Alert Panel inside the Card -->
+    <div id="actionAlert" class="alert-message" style="display:none; margin-bottom:1.5rem;"></div>
+
+    <!-- Grid Table -->
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="?search=@ViewBag.Search&status=@ViewBag.Status&expired=@ViewBag.Expired&sort=Name&direction=@(ViewBag.Sort == "Name" && ViewBag.Direction == "ASC" ? "DESC" : "ASC")&page=@currentPage">
+                            Tên @if (ViewBag.Sort == "Name") { <i class="fa-solid @(ViewBag.Direction == "ASC" ? "fa-sort-up" : "fa-sort-down")"></i> } else { <i class="fa-solid fa-sort"></i> }
+                        </a>
+                    </th>
+                    <th>API Key</th>
+                    <th>
+                        <a href="?search=@ViewBag.Search&status=@ViewBag.Status&expired=@ViewBag.Expired&sort=Owner&direction=@(ViewBag.Sort == "Owner" && ViewBag.Direction == "ASC" ? "DESC" : "ASC")&page=@currentPage">
+                            Chủ Sở Hữu @if (ViewBag.Sort == "Owner") { <i class="fa-solid @(ViewBag.Direction == "ASC" ? "fa-sort-up" : "fa-sort-down")"></i> } else { <i class="fa-solid fa-sort"></i> }
+                        </a>
+                    </th>
+                    <th>Device ID</th>
+                    <th>Trạng Thái</th>
+                    <th>
+                        <a href="?search=@ViewBag.Search&status=@ViewBag.Status&expired=@ViewBag.Expired&sort=ExpiredAt&direction=@(ViewBag.Sort == "ExpiredAt" && ViewBag.Direction == "ASC" ? "DESC" : "ASC")&page=@currentPage">
+                            Hết Hạn @if (ViewBag.Sort == "ExpiredAt") { <i class="fa-solid @(ViewBag.Direction == "ASC" ? "fa-sort-up" : "fa-sort-down")"></i> } else { <i class="fa-solid fa-sort"></i> }
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?search=@ViewBag.Search&status=@ViewBag.Status&expired=@ViewBag.Expired&sort=DailyLimit&direction=@(ViewBag.Sort == "DailyLimit" && ViewBag.Direction == "ASC" ? "DESC" : "ASC")&page=@currentPage">
+                            Giới Hạn Ngày @if (ViewBag.Sort == "DailyLimit") { <i class="fa-solid @(ViewBag.Direction == "ASC" ? "fa-sort-up" : "fa-sort-down")"></i> } else { <i class="fa-solid fa-sort"></i> }
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?search=@ViewBag.Search&status=@ViewBag.Status&expired=@ViewBag.Expired&sort=TotalRequests&direction=@(ViewBag.Sort == "TotalRequests" && ViewBag.Direction == "ASC" ? "DESC" : "ASC")&page=@currentPage">
+                            Yêu Cầu @if (ViewBag.Sort == "TotalRequests") { <i class="fa-solid @(ViewBag.Direction == "ASC" ? "fa-sort-up" : "fa-sort-down")"></i> } else { <i class="fa-solid fa-sort"></i> }
+                        </a>
+                    </th>
+                    <th style="text-align: right;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Count == 0)
+                {
+                    <tr>
+                        <td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 3rem 0;">
+                            <i class="fa-solid fa-folder-open" style="font-size: 2rem; margin-bottom: 0.5rem; display: block; opacity: 0.5;"></i>
+                            Không tìm thấy API Key nào phù hợp.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var key in Model)
+                    {
+                        string badgeClass = "badge-active";
+                        string statusLabel = "Hoạt động";
+                        if (key.Status == "Disabled")
+                        {
+                            badgeClass = "badge-disabled";
+                            statusLabel = "Bị khóa";
+                        }
+                        else if (key.Status == "Expired" || key.IsExpired())
+                        {
+                            badgeClass = "badge-expired";
+                            statusLabel = "Hết hạn";
+                        }
+
+                        <tr>
+                            <td data-label="Tên Key">
+                                <div style="font-weight: 600;">@key.Name</div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@key.Description</div>
+                            </td>
+                            <td data-label="API Key">
+                                <div class="apikey-container">
+                                    <span class="apikey-text">@key.KeyString</span>
+                                    <button class="btn-copy" onclick="copyToClipboard('@key.KeyString')" title="Sao chép">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td data-label="Chủ Sở Hữu">@key.Owner</td>
+                            <td data-label="Device ID">
+                                @if (key.AllowMultipleDevices)
+                                {
+                                    <span class="badge badge-active">
+                                        <i class="fa-solid fa-users"></i> Nhiều thiết bị
+                                    </span>
+                                }
+                                else if (string.IsNullOrEmpty(key.DeviceId))
+                                {
+                                    <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">Chưa liên kết</span>
+                                }
+                                else
+                                {
+                                    <span style="font-family: monospace; font-size: 0.8rem; background: var(--bg-tertiary); padding: 0.2rem 0.4rem; border-radius: 4px;" title="@key.DeviceId">@key.DeviceId</span>
+                                }
+                            </td>
+                            <td data-label="Trạng Thái">
+                                <span class="badge @badgeClass">
+                                    @if (key.Status == "Active") { <i class="fa-solid fa-circle-check"></i> }
+                                    else if (key.Status == "Disabled") { <i class="fa-solid fa-ban"></i> }
+                                    else { <i class="fa-solid fa-clock"></i> }
+                                    @statusLabel
+                                </span>
+                            </td>
+                            <td data-label="Hết Hạn">
+                                <div>@key.ExpiredAt.ToString("dd/MM/yyyy")</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">@key.ExpiredAt.ToString("HH:mm")</div>
+                            </td>
+                            <td data-label="Giới Hạn Ngày">@key.DailyLimit.ToString("N0")</td>
+                            <td data-label="Yêu Cầu">@key.TotalRequests.ToString("N0")</td>
+                            <td data-label="Thao Tác">
+                                <div class="actions-group" style="justify-content: flex-end;">
+                                    <!-- Enable / Disable Button -->
+                                    @if (key.Status == "Active")
+                                    {
+                                        <button class="btn-action btn-disable" onclick="toggleKeyStatus(@key.Id, 'Disabled')" title="Khóa API Key">
+                                            <i class="fa-solid fa-lock"></i>
+                                        </button>
+                                    }
+                                    else if (key.Status == "Disabled")
+                                    {
+                                        <button class="btn-action btn-enable" onclick="toggleKeyStatus(@key.Id, 'Active')" title="Kích hoạt API Key">
+                                            <i class="fa-solid fa-lock-open"></i>
+                                        </button>
+                                    }
+
+                                    <!-- Renew Button -->
+                                    <button class="btn-action btn-renew" onclick="openRenewModal(@key.Id)" title="Gia hạn">
+                                        <i class="fa-solid fa-calendar-plus"></i>
+                                    </button>
+
+                                    <!-- Reset Device Button -->
+                                    @if (!key.AllowMultipleDevices && !string.IsNullOrEmpty(key.DeviceId))
+                                    {
+                                        <button class="btn-action btn-renew" onclick="resetDeviceId(@key.Id, '@key.Name')" title="Reset Thiết Bị">
+                                            <i class="fa-solid fa-arrows-rotate"></i>
+                                        </button>
+                                    }
+
+                                    <!-- Edit Button -->
+                                    <button class="btn-action" onclick="openEditModal(@Newtonsoft.Json.JsonConvert.SerializeObject(key))" title="Sửa">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+
+                                    <!-- Delete Button -->
+                                    <button class="btn-action btn-disable" onclick="deleteKey(@key.Id, '@key.Name')" title="Xóa">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    @if (totalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Hiển thị từ <strong>@startRecord</strong> đến <strong>@endRecord</strong> trong tổng số <strong>@totalRecords</strong> bản ghi
+            </div>
+            <ul class="pagination-list">
+                <li class="pagination-item @(currentPage == 1 ? "disabled" : "")">
+                    <a href="?search=@ViewBag.Search&status=@ViewBag.Status&expired=@ViewBag.Expired&sort=@ViewBag.Sort&direction=@ViewBag.Direction&page=@(currentPage - 1)">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </a>
+                </li>
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    <li class="pagination-item @(currentPage == i ? "active" : "")">
+                        <a href="?search=@ViewBag.Search&status=@ViewBag.Status&expired=@ViewBag.Expired&sort=@ViewBag.Sort&direction=@ViewBag.Direction&page=@i">@i</a>
+                    </li>
+                }
+                <li class="pagination-item @(currentPage == totalPages ? "disabled" : "")">
+                    <a href="?search=@ViewBag.Search&status=@ViewBag.Status&expired=@ViewBag.Expired&sort=@ViewBag.Sort&direction=@ViewBag.Direction&page=@(currentPage + 1)">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    }
+</div>
+
+<!-- =================================================== -->
+<!-- MODALS -->
+<!-- =================================================== -->
+
+<!-- 1. CREATE MODAL -->
+<div id="createModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title">Tạo Mới API Key</h3>
+            <button class="btn-close" onclick="closeModal('createModal')">&times;</button>
+        </div>
+        <form id="createKeyForm">
+            <div class="form-group">
+                <label>Thời Hạn Expiry</label>
+                <select name="expiryMode" id="createExpiryMode" onchange="toggleExpiryFields('create')">
+                    <option value="days">Số ngày sử dụng</option>
+                    <option value="date">Chọn ngày mới</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="createExpiryDaysGroup">
+                <label>Số ngày sử dụng *</label>
+                <input type="number" name="expiryDays" id="createExpiryDays" value="30" min="1" required />
+            </div>
+
+            <div class="form-group" id="createExpiryDateGroup" style="display:none;">
+                <label>Ngày hết hạn *</label>
+                <input type="datetime-local" name="expiryDate" id="createExpiryDate" />
+            </div>
+
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
+                    <input type="checkbox" name="allowMultipleDevices" value="true" style="width:auto;" />
+                    <span>Cho phép dùng nhiều thiết bị cùng lúc</span>
+                </label>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('createModal')">Hủy</button>
+                <button type="submit" class="btn-primary">Tạo Key</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 2. EDIT MODAL -->
+<div id="editModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title">Cập Nhật Thông Tin API Key</h3>
+            <button class="btn-close" onclick="closeModal('editModal')">&times;</button>
+        </div>
+        <form id="editKeyForm">
+            <input type="hidden" name="id" id="editKeyId" />
+            
+            <div class="form-group">
+                <label>Tên Gợi Nhớ *</label>
+                <input type="text" name="name" id="editName" required />
+            </div>
+
+            <div class="form-group">
+                <label>Chủ Sở Hữu (Owner) *</label>
+                <input type="text" name="owner" id="editOwner" required />
+            </div>
+
+            <div class="form-group">
+                <label>Mô Tả</label>
+                <textarea name="description" id="editDescription" rows="2"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Giới Hạn Request / Ngày</label>
+                <input type="number" name="dailyLimit" id="editDailyLimit" min="1" required />
+            </div>
+
+            <div class="form-group">
+                <label>IP Whitelist (Phân tách bằng dấu phẩy)</label>
+                <input type="text" name="whitelistIp" id="editWhitelistIp" placeholder="Để trống nếu cho phép tất cả" />
+            </div>
+
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" id="editNotes" rows="2"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
+                    <input type="checkbox" name="allowMultipleDevices" id="editAllowMultipleDevices" value="true" style="width:auto;" />
+                    <span>Cho phép dùng nhiều thiết bị cùng lúc</span>
+                </label>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('editModal')">Hủy</button>
+                <button type="submit" class="btn-primary">Cập Nhật</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 3. RENEW MODAL -->
+<div id="renewModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title">Gia Hạn API Key</h3>
+            <button class="btn-close" onclick="closeModal('renewModal')">&times;</button>
+        </div>
+        <form id="renewKeyForm">
+            <input type="hidden" name="id" id="renewKeyId" />
+
+            <div class="form-group">
+                <label>Phương thức gia hạn</label>
+                <select name="expiryMode" id="renewExpiryMode" onchange="toggleExpiryFields('renew')">
+                    <option value="days">Cộng thêm số ngày</option>
+                    <option value="date">Chọn ngày hết hạn mới</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="renewExpiryDaysGroup">
+                <label>Số ngày cộng thêm *</label>
+                <input type="number" name="expiryDays" id="renewExpiryDays" value="30" min="1" />
+            </div>
+
+            <div class="form-group" id="renewExpiryDateGroup" style="display:none;">
+                <label>Ngày hết hạn mới *</label>
+                <input type="datetime-local" name="expiryDate" id="renewExpiryDate" />
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal('renewModal')">Hủy</button>
+                <button type="submit" class="btn-primary">Gia Hạn</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        // Modal helpers
+        function openModal(id) {
+            $('#' + id).addClass('show');
+        }
+        
+        function closeModal(id) {
+            $('#' + id).removeClass('show');
+        }
+
+        function toggleExpiryFields(prefix) {
+            var mode = $('#' + prefix + 'ExpiryMode').val();
+            if (mode === 'days') {
+                $('#' + prefix + 'ExpiryDaysGroup').show();
+                $('#' + prefix + 'ExpiryDateGroup').hide();
+                $('#' + prefix + 'ExpiryDays').prop('required', true);
+                $('#' + prefix + 'ExpiryDate').prop('required', false);
+            } else {
+                $('#' + prefix + 'ExpiryDaysGroup').hide();
+                $('#' + prefix + 'ExpiryDateGroup').show();
+                $('#' + prefix + 'ExpiryDays').prop('required', false);
+                $('#' + prefix + 'ExpiryDate').prop('required', true);
+            }
+        }
+
+        // Copy Key to Clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showAlert('Đã sao chép API Key vào Clipboard!', 'alert-success');
+            }, function() {
+                showAlert('Không thể sao chép API Key.', 'alert-danger');
+            });
+        }
+
+        // Show toast alert
+        function showAlert(msg, className) {
+            var $alert = $('#actionAlert');
+            $alert.text(msg).removeClass('alert-danger alert-success').addClass(className).fadeIn();
+            setTimeout(function() {
+                $alert.fadeOut();
+            }, 3000);
+        }
+
+        // Toggle Active / Disabled
+        function toggleKeyStatus(id, newStatus) {
+            $.ajax({
+                url: '@Url.Action("ToggleStatus", "Api")',
+                type: 'POST',
+                data: { id: id, status: newStatus },
+                success: function(res) {
+                    if (res.success) {
+                        showAlert(res.message, 'alert-success');
+                        setTimeout(function() { window.location.reload(); }, 800);
+                    } else {
+                        showAlert(res.message, 'alert-danger');
+                    }
+                },
+                error: function() {
+                    showAlert('Đã xảy ra lỗi khi thay đổi trạng thái.', 'alert-danger');
+                }
+            });
+        }
+
+        // Delete Key
+        function deleteKey(id, name) {
+            if (confirm('Bạn có chắc chắn muốn XÓA API Key "' + name + '" không?\nHành động này không thể hoàn tác.')) {
+                $.ajax({
+                    url: '@Url.Action("DeleteKey", "Api")',
+                    type: 'POST',
+                    data: { id: id },
+                    success: function(res) {
+                        if (res.success) {
+                            showAlert(res.message, 'alert-success');
+                            setTimeout(function() { window.location.reload(); }, 800);
+                        } else {
+                            showAlert(res.message, 'alert-danger');
+                        }
+                    },
+                    error: function() {
+                        showAlert('Đã xảy ra lỗi khi xóa API Key.', 'alert-danger');
+                    }
+                });
+            }
+        }
+
+        // Reset Device ID
+        function resetDeviceId(id, name) {
+            if (confirm('Bạn có muốn Reset Device ID của API Key "' + name + '" không?\nThiết bị kết nối hiện tại sẽ bị xóa.')) {
+                $.ajax({
+                    url: '@Url.Action("ResetDevice", "Api")',
+                    type: 'POST',
+                    data: { id: id },
+                    success: function(res) {
+                        if (res.success) {
+                            showAlert(res.message, 'alert-success');
+                            setTimeout(function() { window.location.reload(); }, 800);
+                        } else {
+                            showAlert(res.message, 'alert-danger');
+                        }
+                    },
+                    error: function() {
+                        showAlert('Đã xảy ra lỗi khi reset thiết bị.', 'alert-danger');
+                    }
+                });
+            }
+        }
+
+        // Open and Populate Edit Modal
+        function openEditModal(keyObj) {
+            $('#editKeyId').val(keyObj.Id);
+            $('#editName').val(keyObj.Name);
+            $('#editOwner').val(keyObj.Owner);
+            $('#editDescription').val(keyObj.Description);
+            $('#editDailyLimit').val(keyObj.DailyLimit);
+            $('#editWhitelistIp').val(keyObj.WhitelistIp);
+            $('#editNotes').val(keyObj.Notes);
+            $('#editAllowMultipleDevices').prop('checked', keyObj.AllowMultipleDevices === true);
+            openModal('editModal');
+        }
+
+        // Open Renew Modal
+        function openRenewModal(id) {
+            $('#renewKeyId').val(id);
+            toggleExpiryFields('renew');
+            openModal('renewModal');
+        }
+
+        $(document).ready(function() {
+            // Set required defaults
+            toggleExpiryFields('create');
+
+            // Handle CREATE Submit
+            $('#createKeyForm').submit(function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '@Url.Action("CreateKey", "Api")',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function(res) {
+                        if (res.success) {
+                            closeModal('createModal');
+                            showAlert(res.message, 'alert-success');
+                            setTimeout(function() { window.location.reload(); }, 800);
+                        } else {
+                            alert(res.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Lỗi kết nối máy chủ.');
+                    }
+                });
+            });
+
+            // Handle EDIT Submit
+            $('#editKeyForm').submit(function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '@Url.Action("UpdateKey", "Api")',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function(res) {
+                        if (res.success) {
+                            closeModal('editModal');
+                            showAlert(res.message, 'alert-success');
+                            setTimeout(function() { window.location.reload(); }, 800);
+                        } else {
+                            alert(res.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Lỗi kết nối máy chủ.');
+                    }
+                });
+            });
+
+            // Handle RENEW Submit
+            $('#renewKeyForm').submit(function(e) {
+                e.preventDefault();
+                $.ajax({
+                    url: '@Url.Action("RenewKey", "Api")',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function(res) {
+                        if (res.success) {
+                            closeModal('renewModal');
+                            showAlert(res.message, 'alert-success');
+                            setTimeout(function() { window.location.reload(); }, 800);
+                        } else {
+                            alert(res.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Lỗi kết nối máy chủ.');
+                    }
+                });
+            });
+        });
+    </script>
+}
