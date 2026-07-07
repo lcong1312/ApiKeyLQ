@@ -70,7 +70,7 @@ namespace ApiKey.Helpers
                     ? new MailAddress(fromEmail)
                     : new MailAddress(fromEmail, fromName, Encoding.UTF8);
                 message.To.Add(new MailAddress(toEmail));
-                message.Subject = "License key cua ban";
+                message.Subject = "License key của bạn";
                 message.SubjectEncoding = Encoding.UTF8;
                 message.BodyEncoding = Encoding.UTF8;
                 message.IsBodyHtml = true;
@@ -100,7 +100,7 @@ namespace ApiKey.Helpers
     <div style=""margin:18px 0;padding:16px;background:#0f172a;border-radius:10px;color:#34d399;font-family:Consolas,monospace;font-size:18px;word-break:break-all;"">
       {safeApiKey}
     </div>
-    <p style=""margin:0 0 8px;line-height:1.5;""><strong>Thời hạn:</strong> {days} ngay</p>
+    <p style=""margin:0 0 8px;line-height:1.5;""><strong>Thời hạn:</strong> {days} ngày</p>
     <p style=""margin:0 0 18px;line-height:1.5;""><strong>Hết hạn:</strong> {expiredAt:dd/MM/yyyy HH:mm}</p>
   </div>
 </body>
