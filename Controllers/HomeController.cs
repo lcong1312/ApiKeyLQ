@@ -68,10 +68,6 @@ namespace ApiKey.Controllers
                     description = description.Substring(0, 25);
                 }
 
-                string host = Request.Url.GetLeftPart(UriPartial.Authority);
-                string cancelUrl = $"{host}/";
-                string returnUrl = $"{host}/";
-
                 // Save order as pending in orders.json
                 var order = new PayosOrder
                 {
@@ -86,6 +82,10 @@ namespace ApiKey.Controllers
                     CreatedAt = JsonDbHelper.VnNow
                 };
                 OrderDbHelper.Add(order);
+
+                string host = Request.Url.GetLeftPart(UriPartial.Authority);
+                string cancelUrl = $"{host}/?payment=cancelled&orderCode={orderCode}";
+                string returnUrl = $"{host}/?payment=success&orderCode={orderCode}";
 
                 // Call PayOS API to generate payment link
                 var paymentResult = await PayosHelper.CreatePaymentLink(
@@ -128,7 +128,7 @@ namespace ApiKey.Controllers
                 if (paymentDetails.Status == "PAID")
                 {
                     // Generate new API Key
-                    string keyString = "kg_live_" + Guid.NewGuid().ToString("n").Substring(0, 12);
+                    string keyString = "vietcong_" + Guid.NewGuid().ToString("n").Substring(0, 12);
 
                     // Insert key into db.json
                     var db = JsonDbHelper.Read();

@@ -1031,6 +1031,28 @@
                 $('#purchaseModal').addClass('show');
             }
 
+            function showPendingState() {
+                $('#purchaseModal').addClass('show');
+                $('#paymentInitState').hide();
+                $('#paymentSuccessState').hide();
+                $('#paymentPendingState').css('display', 'flex');
+            }
+
+            function showSuccessState(apiKey) {
+                $('#generatedKeyDisplay').text(apiKey);
+                $('#purchaseModal').addClass('show');
+                $('#paymentInitState').hide();
+                $('#paymentPendingState').hide();
+                $('#paymentSuccessState').css('display', 'flex');
+            }
+
+            function clearPaymentReturnParams() {
+                if (!window.history || !window.history.replaceState) return;
+
+                var cleanUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+
             // Open Modal
             $('.openPurchaseModal').click(function() {
                 openPurchaseModal($(this).data('product-id'));
@@ -1092,8 +1114,7 @@
                             window.open(response.checkoutUrl, '_blank');
 
                             // Switch to polling state
-                            $('#paymentInitState').hide();
-                            $('#paymentPendingState').css('display', 'flex');
+                            showPendingState();
 
                             // Start status polling
                             startPolling(currentOrderCode);
@@ -1112,7 +1133,7 @@
             function startPolling(orderCode) {
                 if (pollingInterval) clearInterval(pollingInterval);
 
-                pollingInterval = setInterval(function() {
+                function checkStatus() {
                     $.ajax({
                         url: '@Url.Action("CheckPaymentStatus", "Home")',
                         type: 'GET',
@@ -1122,19 +1143,15 @@
                                 if (response.status === 'PAID') {
                                     clearInterval(pollingInterval);
                                     pollingInterval = null;
-                                    
-                                    // Display generated key
-                                    $('#generatedKeyDisplay').text(response.apiKey);
-
-                                    // Switch to Success State
-                                    $('#paymentPendingState').hide();
-                                    $('#paymentSuccessState').css('display', 'flex');
+                                    showSuccessState(response.apiKey);
+                                    clearPaymentReturnParams();
                                 } else if (response.status === 'CANCELLED') {
                                     clearInterval(pollingInterval);
                                     pollingInterval = null;
                                     $('#paymentPendingState').hide();
                                     $('#paymentInitState').show();
                                     $('#formError').text('Giao dịch của bạn đã bị hủy trên cổng PayOS.').fadeIn();
+                                    clearPaymentReturnParams();
                                 }
                             }
                         },
@@ -1142,7 +1159,32 @@
                             // Suppress errors during polling to keep experience clean
                         }
                     });
-                }, 3000);
+                }
+
+                checkStatus();
+                pollingInterval = setInterval(checkStatus, 3000);
+            }
+
+            function resumePaymentReturn() {
+                var params = new URLSearchParams(window.location.search);
+                var orderCode = params.get('orderCode');
+                var paymentStatus = params.get('payment') || params.get('status');
+
+                if (!orderCode) return;
+
+                if (paymentStatus === 'cancelled' || paymentStatus === 'CANCELLED') {
+                    $('#purchaseModal').addClass('show');
+                    $('#paymentPendingState').hide();
+                    $('#paymentSuccessState').hide();
+                    $('#paymentInitState').show();
+                    $('#formError').text('Giao dịch của bạn đã bị hủy trên cổng PayOS.').fadeIn();
+                    clearPaymentReturnParams();
+                    return;
+                }
+
+                currentOrderCode = orderCode;
+                showPendingState();
+                startPolling(orderCode);
             }
 
             // Copy to clipboard
@@ -1156,6 +1198,8 @@
                     }, 2000);
                 });
             });
+
+            resumePaymentReturn();
         });
     </script>
 </body>
