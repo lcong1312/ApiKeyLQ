@@ -130,6 +130,7 @@
     <Compile Include="Filters\AdminAuthorizeAttribute.cs" />
     <Compile Include="Filters\VerifyApiKeyAttribute.cs" />
     <Compile Include="Helpers\AesCryptoHelper.cs" />
+    <Compile Include="Helpers\EmailHelper.cs" />
     <Compile Include="Helpers\JsonDbHelper.cs" />
     <Compile Include="Helpers\PasswordHasher.cs" />
     <Compile Include="Helpers\JwtHelper.cs" />

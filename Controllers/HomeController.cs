@@ -155,6 +155,7 @@ namespace ApiKey.Controllers
 
                     db.ApiKeys.Add(newKey);
                     JsonDbHelper.Write(db);
+                    EmailHelper.TrySendLicenseKey(order.Email, keyString, productName, order.Days, newKey.ExpiredAt);
 
                     // Update order status in orders.json
                     OrderDbHelper.Update(orderCode, "PAID", keyString);
