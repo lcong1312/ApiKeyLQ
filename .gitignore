@@ -29,6 +29,7 @@ project.assets.json
 # ASP.NET runtime data / secrets
 App_Data/*.json
 App_Data/*.log
+App_Data/PrivateSettings.config
 App_Data/*.sqlite
 App_Data/*.sqlite3
 App_Data/*.db
